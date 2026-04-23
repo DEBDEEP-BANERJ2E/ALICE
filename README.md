@@ -260,6 +260,18 @@ python train.py \
   --output-dir ./output/alice-grpo
 ```
 
+Or open `train.ipynb` in Google Colab — all cells run top-to-bottom, no local GPU needed.
+
+### Recommended HF Compute Tiers
+
+| Tier | GPU | VRAM | Cost | Use case |
+|---|---|---|---|---|
+| `cpu-basic` | None | 16 GB RAM | $0.01/hr | Run OpenEnv server only |
+| `t4-medium` | 1× T4 | 16 GB | $0.60/hr | Training — default, fits Qwen-7B QLoRA |
+| `a10g-small` | 1× A10G | 24 GB | $1.00/hr | Training — faster, use `--hardware a10g` |
+
+The inference script runs on CPU (calls HF Inference API, no local GPU). A 200-episode training run on T4 costs ~$1.20.
+
 ---
 
 ## Baseline Scores

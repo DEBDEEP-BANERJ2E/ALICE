@@ -4,7 +4,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Alice Environment Client."""
+"""Alice Environment Client — ALICE co-evolutionary RL environment."""
 
 from typing import Dict
 
@@ -19,80 +19,59 @@ class AliceEnv(
     EnvClient[AliceAction, AliceObservation, State]
 ):
     """
-    Client for the Alice Environment.
+    Client for the ALICE Environment.
 
-    This client maintains a persistent WebSocket connection to the environment server,
+    Maintains a persistent WebSocket connection to the environment server,
     enabling efficient multi-step interactions with lower latency.
     Each client instance has its own dedicated environment session on the server.
 
     Example:
-        >>> # Connect to a running server
         >>> with AliceEnv(base_url="http://localhost:8000") as client:
         ...     result = client.reset()
-        ...     print(result.observation.echoed_message)
+        ...     obs = result.observation
+        ...     print(obs.task)  # CoT-wrapped negation arithmetic task
         ...
-        ...     result = client.step(AliceAction(message="Hello!"))
-        ...     print(result.observation.echoed_message)
+        ...     action = AliceAction(response="Answer: 7", mode="hunt", task_id=obs.task_id)
+        ...     result = client.step(action)
+        ...     print(result.observation.feedback)
 
     Example with Docker:
-        >>> # Automatically start container and connect
         >>> client = AliceEnv.from_docker_image("alice-env:latest")
         >>> try:
         ...     result = client.reset()
-        ...     result = client.step(AliceAction(message="Test"))
+        ...     obs = result.observation
+        ...     result = client.step(AliceAction(response="Answer: 7", mode="hunt", task_id=obs.task_id))
         ... finally:
         ...     client.close()
     """
 
     def _step_payload(self, action: AliceAction) -> Dict:
-        """
-        Convert AliceAction to JSON payload for step message.
-
-        Args:
-            action: AliceAction instance
-
-        Returns:
-            Dictionary representation suitable for JSON encoding
-        """
         return {
-            "message": action.message,
+            "response": action.response,
+            "mode": action.mode,
+            "task_id": action.task_id,
         }
 
     def _parse_result(self, payload: Dict) -> StepResult[AliceObservation]:
-        """
-        Parse server response into StepResult[AliceObservation].
-
-        Args:
-            payload: JSON response data from server
-
-        Returns:
-            StepResult with AliceObservation
-        """
         obs_data = payload.get("observation", {})
         observation = AliceObservation(
-            echoed_message=obs_data.get("echoed_message", ""),
-            message_length=obs_data.get("message_length", 0),
+            task=obs_data.get("task", ""),
+            skill_domain=obs_data.get("skill_domain", "negation_arithmetic"),
+            difficulty_tier=obs_data.get("difficulty_tier", "easy"),
+            turn_number=obs_data.get("turn_number", 0),
+            hint=obs_data.get("hint"),
+            reward=payload.get("reward", 0.0),
             done=payload.get("done", False),
-            reward=payload.get("reward"),
-            metadata=obs_data.get("metadata", {}),
+            feedback=obs_data.get("feedback", ""),
+            task_id=obs_data.get("task_id", ""),
         )
-
         return StepResult(
             observation=observation,
-            reward=payload.get("reward"),
+            reward=payload.get("reward", 0.0),
             done=payload.get("done", False),
         )
 
     def _parse_state(self, payload: Dict) -> State:
-        """
-        Parse server response into State object.
-
-        Args:
-            payload: JSON response from state request
-
-        Returns:
-            State object with episode_id and step_count
-        """
         return State(
             episode_id=payload.get("episode_id"),
             step_count=payload.get("step_count", 0),
