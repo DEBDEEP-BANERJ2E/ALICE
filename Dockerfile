@@ -71,6 +71,11 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Set PYTHONPATH so imports work correctly
 ENV PYTHONPATH="/app/env:$PYTHONPATH"
 
+# Environment variables for ALICE configuration
+ENV HF_TOKEN=""
+ENV API_BASE_URL=""
+ENV MODEL_NAME="Qwen/Qwen2.5-7B-Instruct"
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1

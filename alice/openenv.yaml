@@ -4,4 +4,5 @@ type: space
 runtime: fastapi
 app: server.app:app
 port: 8000
+description: "ALICE — Adversarial Loop for Inter-model Co-evolutionary Environment"
 
