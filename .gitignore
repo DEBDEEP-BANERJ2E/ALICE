@@ -1,0 +1,60 @@
+# Environment variables - NEVER commit secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# uv
+uv.lock
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.tar
+
+# Logs
+*.log
+logs/
+
+# Model weights / checkpoints (large files)
+*.bin
+*.safetensors
+*.pt
+*.pth
+checkpoints/
+outputs/
+
+# OpenEnv / Codex agents
+.agents/
+.codex/
+
+.kiro/
