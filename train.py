@@ -51,30 +51,20 @@ def make_reward_fn(server_url: str) -> Callable:
         rewards = []
         for prompt, completion in zip(prompts, completions):
             try:
-                # Reset to get task_id
-                reset_resp = requests.post(
-                    f"{server_url}/reset",
-                    json={},
-                    timeout=10,
-                )
-                reset_resp.raise_for_status()
-                reset_data = reset_resp.json()
-                task_id = reset_data.get("observation", {}).get("task_id", "")
-
-                # Step with completion
-                step_resp = requests.post(
-                    f"{server_url}/step",
-                    json={
-                        "response": completion,
-                        "mode": "hunt",
-                        "task_id": task_id,
-                    },
-                    timeout=10,
-                )
-                step_resp.raise_for_status()
-                step_data = step_resp.json()
-                reward = float(step_data.get("reward", 0.0))
-                rewards.append(reward)
+                # Use the client for proper serialization
+                from alice.client import AliceEnv
+                from alice.models import AliceAction
+                
+                with AliceEnv(base_url=server_url).sync() as client:
+                    # Reset to get task_id
+                    reset_result = client.reset()
+                    task_id = reset_result.observation.task_id
+                    
+                    # Step with completion
+                    action = AliceAction(response=completion, mode="hunt", task_id=task_id)
+                    step_result = client.step(action)
+                    reward = float(step_result.reward)
+                    rewards.append(reward)
             except Exception as e:
                 logger.warning(f"Reward computation failed: {e}")
                 rewards.append(0.0)
@@ -89,19 +79,20 @@ def build_dataset(server_url: str, num_prompts: int = 200) -> list[dict]:
 
     Returns list of dicts with keys: prompt, task_id
     """
+    from alice.client import AliceEnv
+    
     dataset = []
     for i in range(num_prompts):
         try:
-            resp = requests.post(f"{server_url}/reset", json={}, timeout=10)
-            resp.raise_for_status()
-            data = resp.json()
-            obs = data.get("observation", {})
-            dataset.append(
-                {
-                    "prompt": obs.get("task", ""),
-                    "task_id": obs.get("task_id", ""),
-                }
-            )
+            with AliceEnv(base_url=server_url).sync() as client:
+                result = client.reset()
+                obs = result.observation
+                dataset.append(
+                    {
+                        "prompt": obs.task,
+                        "task_id": obs.task_id,
+                    }
+                )
             if (i + 1) % 50 == 0:
                 logger.info(f"[TRAIN] Built {i + 1}/{num_prompts} prompts")
         except Exception as e:
@@ -141,7 +132,7 @@ def main() -> None:
     parser.add_argument(
         "--num-episodes",
         type=int,
-        default=200,
+        default=300,
         help="Number of training episodes",
     )
     parser.add_argument(

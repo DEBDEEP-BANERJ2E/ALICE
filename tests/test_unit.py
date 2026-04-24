@@ -10,7 +10,7 @@ from alice.server.task_generator import cot_prompt_wrapper, TaskGenerator
 from alice.server.verifier import _extract_answer, VerifierStack
 from alice.server.curriculum_manager import CurriculumManager
 from alice.server.reward import RewardCalculator
-from conftest import MockOracle, MockFailureBank
+from tests.conftest import MockOracle, MockFailureBank
 
 
 class TestCoTPromptWrapper:
