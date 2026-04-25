@@ -2,43 +2,66 @@
 
 **ALICE is a reinforcement learning training environment that discovers and fixes failure modes in LLMs through co-evolutionary task generation.**
 
-Would a post-training RL colleague put this into their training run? **Yes.** ALICE targets a real, measurable failure mode (negation + arithmetic composition) that appears in production LLMs, generates unlimited distinct tasks dynamically, and verifies fixes without human labeling.
+A real RL environment for negation arithmetic with curriculum learning, 3-tier verification, chain-of-thought scaffolding, failure bank for targeted training, and discrimination rewards for zone of proximal development.
 
 ---
 
-## Overview
+## Quick Start
 
-ALICE implements a closed-loop co-evolutionary curriculum where:
+### Local Testing (Mac M1 Air)
+```bash
+# Start server
+cd alice
+python -m uvicorn server.app:app --host 0.0.0.0 --port 8000
 
-1. **Hunt Phase** — Task Generator searches for failure modes of the target model
+# In another terminal, test
+python ../inference.py
+```
+
+### Docker Deployment
+```bash
+docker build -t alice-env .
+docker run -p 8000:8000 \
+  -e HF_TOKEN="your_token" \
+  -e API_BASE_URL="https://api-inference.huggingface.co/models/" \
+  alice-env
+```
+
+### Training with HF Credits (Tomorrow)
+```bash
+export HF_TOKEN="your_token"
+export API_BASE_URL="https://api-inference.huggingface.co/models/"
+
+python train.py \
+  --num-episodes 300 \
+  --output-dir ./output/alice-trained \
+  --hardware t4
+```
+
+---
+
+## What ALICE Does
+
+ALICE implements a closed-loop co-evolutionary curriculum:
+
+1. **Hunt Phase** — Task Generator searches for failure modes
 2. **Verify Phase** — Three-tier Verifier Stack (programmatic + LLM judge + regression) scores responses
-3. **Repair Phase** — Task Generator synthesizes (broken_attempt, corrected_answer) pairs
-4. **Escalate Phase** — Curriculum Manager adapts difficulty as the model improves
+3. **Repair Phase** — Task Generator synthesizes corrected pairs from failures
+4. **Escalate Phase** — Curriculum Manager adapts difficulty as model improves
 
-The system targets **negation + arithmetic composition** — a documented failure mode where models conflate "NOT X" with X when performing multi-step arithmetic. This domain was chosen because it is:
-- **Real** — not a toy benchmark
-- **Measurable** — programmatic numeric comparison
-- **Transferable** — improves real-world reasoning tasks
+**Target domain:** Negation + arithmetic composition (e.g., "If NOT 5, what is 3+4?")
 
----
-
-## Discrimination Reward: The Core Innovation
-
-ALICE uses **discrimination scoring** to focus training on the model's actual failure modes:
-
-```
-Discrimination_Score = reference_pass_rate - target_pass_rate
-```
-
-This score measures how much harder a task is for the target model than for reference models. ALICE targets the **discrimination zone** `[0.2, 0.8]` where tasks are neither trivial nor impossible.
-
-**Why not scheduled curriculum?** Because the Oracle (Benchmark Generator) dynamically escalates difficulty as the model improves. When rolling accuracy exceeds 0.75, the Curriculum Manager assigns "hard" tier tasks. The model always faces tasks in its zone of proximal development — challenging but solvable.
+**Why this works:**
+- Real failure mode in production LLMs
+- Programmatically verifiable (numeric comparison)
+- Unlimited task generation
+- Discrimination rewards focus on zone of proximal development
 
 ---
 
 ## Architecture
 
-### High-Level Data Flow
+### Data Flow
 
 ```
 Target Model (Qwen-7B-Instruct)

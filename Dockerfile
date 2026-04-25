@@ -29,7 +29,7 @@ COPY . /app/env
 
 # For in-repo builds, openenv is already vendored in the build context
 # For standalone builds, openenv will be installed via pyproject.toml
-WORKDIR /app/env
+WORKDIR /app/env/alice
 
 # Ensure uv is available (for local builds where base image lacks it)
 RUN if ! command -v uv >/dev/null 2>&1; then \
@@ -60,7 +60,7 @@ FROM ${BASE_IMAGE}
 WORKDIR /app
 
 # Copy the virtual environment from builder
-COPY --from=builder /app/env/.venv /app/.venv
+COPY --from=builder /app/env/alice/.venv /app/.venv
 
 # Copy the environment code
 COPY --from=builder /app/env /app/env
@@ -82,4 +82,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Run the FastAPI server
 # The module path is constructed to work with the /app/env structure
-CMD ["sh", "-c", "cd /app/env && uvicorn server.app:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "cd /app/env/alice && uvicorn server.app:app --host 0.0.0.0 --port 8000"]

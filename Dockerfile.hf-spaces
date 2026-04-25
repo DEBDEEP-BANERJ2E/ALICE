@@ -1,0 +1,25 @@
+# Dockerfile for HF Spaces with Nvidia T4 GPU
+# Uses pinned versions to avoid dependency conflicts
+# Cache invalidation: 2026-04-25-v2
+
+FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y python3.10 python3-pip git && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --upgrade pip setuptools wheel
+
+COPY requirements.txt requirements.txt
+
+RUN pip install -q torch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cu121 && \
+    pip install -q -r requirements.txt
+
+COPY train.py .
+COPY alice/ ./alice/
+
+ENV HF_TOKEN=""
+ENV MODEL_NAME="TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+ENV CUDA_VISIBLE_DEVICES="0"
+
+CMD ["python3", "train.py", "--num-episodes", "20", "--output-dir", "./output/alice-trained"]
